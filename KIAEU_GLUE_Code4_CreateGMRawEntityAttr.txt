@@ -1,0 +1,101 @@
+## Import Spark and python libraries
+# --additional-python-modules scikit-learn==0.21.3
+import datetime
+from pyspark import SparkContext
+from pyspark.sql import SparkSession
+# from pyspark.ml.linalg import Vectors
+# from pyspark.ml.classification import LogisticRegression
+# from pyspark.mllib.stat import Statistics
+# from pyspark.ml.feature import StringIndexer
+import pandas as pd
+from io import StringIO
+import boto3
+import sys
+# AWS Glue imports
+from awsglue.transforms import *
+from awsglue.utils import getResolvedOptions
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from awsglue.dynamicframe import DynamicFrame
+from timeit import default_timer as timer
+from time import perf_counter
+# %pyspark
+from functools import reduce
+from pyspark.sql import DataFrame
+from pyspark.sql import SQLContext
+from pyspark.sql.functions import *
+from pyspark import SparkContext, SparkConf
+from pyspark.sql import SparkSession
+from pyspark.sql.types import *
+from pyspark.sql.functions import lit
+import pyspark.sql.functions as f
+from pyspark.sql.functions import countDistinct
+from pyspark.sql import Window
+spark = (SparkSession
+         .builder
+         .config("spark.sql.session.timeZone", "UTC")
+         .getOrCreate()
+         )
+
+sc = SparkContext.getOrCreate()
+sqlContext = SQLContext(sc)
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+from pyspark.sql.functions import max
+import matplotlib.pyplot as plt
+import io
+from io import StringIO
+import boto3
+
+
+VIN202211_Attr=spark.read.parquet('s3://analytics-telematics-tod-us-east-1-375375715580/chenha01/KIA_EU/GM_Raw_JourneyAttr_FromProdJourney/year=2023/')
+print(VIN202211_Attr.count())
+VIN202211_Attr = VIN202211_Attr.replace(-1, 0)
+VIN202211_Attr = VIN202211_Attr.fillna(0)
+VIN202211_Attr = VIN202211_Attr.filter(VIN202211_Attr.SecondsBrakeMeterPerSecSquaredGe30==VIN202211_Attr.SecondsBrakeMeterPerSecSquaredGe30_Prod).filter(VIN202211_Attr.SecondsBrakeMeterPerSecSquaredGe35==VIN202211_Attr.SecondsBrakeMeterPerSecSquaredGe35_Prod).filter(VIN202211_Attr.SecondsBrakeMeterPerSecSquaredGe40==VIN202211_Attr.SecondsBrakeMeterPerSecSquaredGe40_Prod).filter(VIN202211_Attr.SecondsBrakeMeterPerSecSquaredGe45==VIN202211_Attr.SecondsBrakeMeterPerSecSquaredGe45_Prod).filter(VIN202211_Attr.SecondsBrakeMeterPerSecSquaredGe50==VIN202211_Attr.SecondsBrakeMeterPerSecSquaredGe50_Prod).filter(VIN202211_Attr.SecondsAccMeterPerSecSquaredGe30==VIN202211_Attr.SecondsAccMeterPerSecSquaredGe30_Prod).filter(VIN202211_Attr.SecondsAccMeterPerSecSquaredGe35==VIN202211_Attr.SecondsAccMeterPerSecSquaredGe35_Prod).filter(VIN202211_Attr.SecondsAccMeterPerSecSquaredGe40==VIN202211_Attr.SecondsAccMeterPerSecSquaredGe40_Prod).filter(VIN202211_Attr.SecondsAccMeterPerSecSquaredGe45==VIN202211_Attr.SecondsAccMeterPerSecSquaredGe45_Prod).filter(VIN202211_Attr.SecondsAccMeterPerSecSquaredGe50==VIN202211_Attr.SecondsAccMeterPerSecSquaredGe50_Prod)
+print(VIN202211_Attr.count())
+VIN202211_Attr.show(10)
+
+
+GM_Raw_Brake30 = VIN202211_Attr.groupBy("vehicleUUID").sum('SecondsBrakeMeterPerSecSquaredGe30').withColumnRenamed('sum(SecondsBrakeMeterPerSecSquaredGe30)', 'SecondsBrakeMeterPerSecSquaredGe30')
+GM_Raw_Brake35 = VIN202211_Attr.groupBy("vehicleUUID").sum('SecondsBrakeMeterPerSecSquaredGe35').withColumnRenamed('sum(SecondsBrakeMeterPerSecSquaredGe35)', 'SecondsBrakeMeterPerSecSquaredGe35')
+GM_Raw_Brake361 = VIN202211_Attr.groupBy("vehicleUUID").sum('SecondsBrakeMeterPerSecSquaredGe361').withColumnRenamed('sum(SecondsBrakeMeterPerSecSquaredGe361)', 'SecondsBrakeMeterPerSecSquaredGe361')
+GM_Raw_Brake40 = VIN202211_Attr.groupBy("vehicleUUID").sum('SecondsBrakeMeterPerSecSquaredGe40').withColumnRenamed('sum(SecondsBrakeMeterPerSecSquaredGe40)', 'SecondsBrakeMeterPerSecSquaredGe40')
+GM_Raw_Brake45 = VIN202211_Attr.groupBy("vehicleUUID").sum('SecondsBrakeMeterPerSecSquaredGe45').withColumnRenamed('sum(SecondsBrakeMeterPerSecSquaredGe45)', 'SecondsBrakeMeterPerSecSquaredGe45')
+GM_Raw_Brake472 = VIN202211_Attr.groupBy("vehicleUUID").sum('SecondsBrakeMeterPerSecSquaredGe472').withColumnRenamed('sum(SecondsBrakeMeterPerSecSquaredGe472)', 'SecondsBrakeMeterPerSecSquaredGe472')
+GM_Raw_Brake50 = VIN202211_Attr.groupBy("vehicleUUID").sum('SecondsBrakeMeterPerSecSquaredGe50').withColumnRenamed('sum(SecondsBrakeMeterPerSecSquaredGe50)', 'SecondsBrakeMeterPerSecSquaredGe50')
+
+GM_Raw_Acc30 = VIN202211_Attr.groupBy("vehicleUUID").sum('SecondsAccMeterPerSecSquaredGe30').withColumnRenamed('sum(SecondsAccMeterPerSecSquaredGe30)', 'SecondsAccMeterPerSecSquaredGe30')
+GM_Raw_Acc35 = VIN202211_Attr.groupBy("vehicleUUID").sum('SecondsAccMeterPerSecSquaredGe35').withColumnRenamed('sum(SecondsAccMeterPerSecSquaredGe35)', 'SecondsAccMeterPerSecSquaredGe35')
+GM_Raw_Acc361 = VIN202211_Attr.groupBy("vehicleUUID").sum('SecondsAccMeterPerSecSquaredGe361').withColumnRenamed('sum(SecondsAccMeterPerSecSquaredGe361)', 'SecondsAccMeterPerSecSquaredGe361')
+GM_Raw_Acc40 = VIN202211_Attr.groupBy("vehicleUUID").sum('SecondsAccMeterPerSecSquaredGe40').withColumnRenamed('sum(SecondsAccMeterPerSecSquaredGe40)', 'SecondsAccMeterPerSecSquaredGe40')
+GM_Raw_Acc45 = VIN202211_Attr.groupBy("vehicleUUID").sum('SecondsAccMeterPerSecSquaredGe45').withColumnRenamed('sum(SecondsAccMeterPerSecSquaredGe45)', 'SecondsAccMeterPerSecSquaredGe45')
+GM_Raw_Acc472 = VIN202211_Attr.groupBy("vehicleUUID").sum('SecondsAccMeterPerSecSquaredGe472').withColumnRenamed('sum(SecondsAccMeterPerSecSquaredGe472)', 'SecondsAccMeterPerSecSquaredGe472')
+GM_Raw_Acc50 = VIN202211_Attr.groupBy("vehicleUUID").sum('SecondsAccMeterPerSecSquaredGe50').withColumnRenamed('sum(SecondsAccMeterPerSecSquaredGe50)', 'SecondsAccMeterPerSecSquaredGe50')
+
+
+VIN202211 = VIN202211_Attr.select("vehicleUUID").dropDuplicates() 
+VIN202211 = VIN202211.join(GM_Raw_Brake30, "vehicleUUID", "leftouter")
+VIN202211 = VIN202211.join(GM_Raw_Brake35, "vehicleUUID", "leftouter")
+VIN202211 = VIN202211.join(GM_Raw_Brake361, "vehicleUUID", "leftouter")
+VIN202211 = VIN202211.join(GM_Raw_Brake40, "vehicleUUID", "leftouter")
+VIN202211 = VIN202211.join(GM_Raw_Brake45, "vehicleUUID", "leftouter")
+VIN202211 = VIN202211.join(GM_Raw_Brake472, "vehicleUUID", "leftouter")
+VIN202211 = VIN202211.join(GM_Raw_Brake50, "vehicleUUID", "leftouter")
+
+VIN202211 = VIN202211.join(GM_Raw_Acc30, "vehicleUUID", "leftouter")
+VIN202211 = VIN202211.join(GM_Raw_Acc35, "vehicleUUID", "leftouter")
+VIN202211 = VIN202211.join(GM_Raw_Acc361, "vehicleUUID", "leftouter")
+VIN202211 = VIN202211.join(GM_Raw_Acc40, "vehicleUUID", "leftouter")
+VIN202211 = VIN202211.join(GM_Raw_Acc45, "vehicleUUID", "leftouter")
+VIN202211 = VIN202211.join(GM_Raw_Acc472, "vehicleUUID", "leftouter")
+VIN202211 = VIN202211.join(GM_Raw_Acc50, "vehicleUUID", "leftouter")
+
+output_path = 's3://analytics-telematics-tod-us-east-1-375375715580/chenha01/KIA_EU/GM_Raw_EntityAttr_FromProdJourney/year=2023/month=06'
+VIN202211.write.save(output_path, format='parquet', header=True)
+
+#2022-11 1172862
+#2023-6 1440543
+    
+     #"journeyMetadata.journeyUUID",
+     #                                                   "journeyMetadata.externalJourneyId",   

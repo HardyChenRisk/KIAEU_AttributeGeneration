@@ -1,0 +1,67 @@
+# from pyspark.mllib.stat import Statistics
+# from pyspark.ml.feature import StringIndexer
+import pandas as pd
+from io import StringIO
+import boto3
+import sys
+# AWS Glue imports
+from awsglue.transforms import *
+from awsglue.utils import getResolvedOptions
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from awsglue.dynamicframe import DynamicFrame
+from timeit import default_timer as timer
+from time import perf_counter
+# %pyspark
+from functools import reduce
+from pyspark.sql import DataFrame
+from pyspark.sql import SQLContext
+from pyspark.sql.functions import *
+from pyspark import SparkContext, SparkConf
+from pyspark.sql import SparkSession
+from pyspark.sql.types import *
+from pyspark.sql.functions import lit
+import pyspark.sql.functions as f
+from pyspark.sql.functions import countDistinct
+from pyspark.sql import Window
+spark = (SparkSession
+         .builder
+         .config("spark.sql.session.timeZone", "UTC")
+         .getOrCreate()
+         )
+
+sc = SparkContext.getOrCreate()
+sqlContext = SQLContext(sc)
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+from pyspark.sql.functions import max
+import matplotlib.pyplot as plt
+import io
+from io import StringIO
+import boto3
+
+
+for counter in range(1,31):
+    VIN202211=spark.read.parquet('s3://analytics-telematics-tod-us-east-1-375375715580/chenha01/KIA_EU/GM_Raw_Sample_Trip_202211/')
+    day = str(counter)
+    day = ("0" + day) if len(day) == 1 else day
+    path = 's3://telematics-us-prod-jnys-enriched/success/year=2022/month=11/day=' + day
+    print(path)
+    GM_Raw=sqlContext.read.json(path)
+    GM_Raw = GM_Raw.select("vehicleUUID", "journeyUUID",  explode('dataCollections').alias('dataCollections')) 
+
+    GM_Raw = GM_Raw.select("vehicleUUID", "journeyUUID", 'dataCollections.dataCollectionType', 'dataCollections.timestampLocalIso', 'dataCollections.timestampUtcIso', 'dataCollections.gps.latitude','dataCollections.gps.longitude', 'dataCollections.gps.speedMps', 'dataCollections.metrics.ignitionOn', 'dataCollections.metrics.odometer','dataCollections.metrics.hardAccel','dataCollections.metrics.speedRateOfChange', 'dataCollections.metrics.overThreshold','dataCollections.metrics.accelerating')  
+    GM_Raw= GM_Raw.withColumn('odometer', GM_Raw.odometer.cast("integer")).withColumn('timestampUtcIso', GM_Raw.timestampUtcIso.cast("timestamp")) 
+    GM_Raw = GM_Raw.dropDuplicates() 
+    GM_Raw = GM_Raw.filter(GM_Raw.dataCollectionType == 'ignitionOnOrOff') 
+
+    StartOdoReading = GM_Raw.filter(GM_Raw.ignitionOn == True).select("vehicleUUID", "journeyUUID", "odometer").withColumnRenamed('odometer','StartOdoReading')
+    EndOdoReading = GM_Raw.filter(GM_Raw.ignitionOn == False).select("journeyUUID", "odometer").withColumnRenamed('odometer','EndOdoReading')
+    StartOdoReading = StartOdoReading.join(EndOdoReading, "journeyUUID", "inner")
+    StartOdoReading= StartOdoReading.withColumn('MetersDistanceTraveled', StartOdoReading.EndOdoReading - StartOdoReading.StartOdoReading)
+
+    VIN202211 = VIN202211.select("vehicleUUID").dropDuplicates() 
+    VIN202211 = VIN202211.join(StartOdoReading, "vehicleUUID", "leftouter")
+
+    output_path = 's3://analytics-telematics-tod-us-east-1-375375715580/chenha01/KIA_EU/GM_Raw_JourneyAttr_MetersDistanceTraveled/year=2022/month=11/day=' + day
+    VIN202211.write.save(output_path, format='parquet', header=True)

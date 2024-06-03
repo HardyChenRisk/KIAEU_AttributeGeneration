@@ -1,0 +1,63 @@
+## Import Spark and python libraries
+# --additional-python-modules scikit-learn==0.21.3
+import datetime
+from pyspark import SparkContext
+from pyspark.sql import SparkSession
+# from pyspark.ml.linalg import Vectors
+# from pyspark.ml.classification import LogisticRegression
+# from pyspark.mllib.stat import Statistics
+# from pyspark.ml.feature import StringIndexer
+import pandas as pd
+from io import StringIO
+import boto3
+import sys
+# AWS Glue imports
+from awsglue.transforms import *
+from awsglue.utils import getResolvedOptions
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from awsglue.dynamicframe import DynamicFrame
+from timeit import default_timer as timer
+from time import perf_counter
+# %pyspark
+from functools import reduce
+from pyspark.sql import DataFrame
+from pyspark.sql import SQLContext
+from pyspark.sql.functions import *
+from pyspark import SparkContext, SparkConf
+from pyspark.sql import SparkSession
+from pyspark.sql.types import *
+from pyspark.sql.functions import lit
+import pyspark.sql.functions as f
+from pyspark.sql.functions import countDistinct
+from pyspark.sql import Window
+spark = (SparkSession
+         .builder
+         .config("spark.sql.session.timeZone", "UTC")
+         .getOrCreate()
+         )
+
+sc = SparkContext.getOrCreate()
+sqlContext = SQLContext(sc)
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+from pyspark.sql.functions import max
+import matplotlib.pyplot as plt
+import io
+from io import StringIO
+import boto3
+
+
+VIN202211_Attr=spark.read.parquet('s3://analytics-telematics-tod-us-east-1-375375715580/chenha01/KIA_EU/GM_Raw_JourneyAttr_MetersDistanceTraveled/year=2022/')
+VIN202211_Attr = VIN202211_Attr.filter(col('MetersDistanceTraveled') > 0)
+VIN202211_Attr = VIN202211_Attr.groupBy("vehicleUUID").sum('MetersDistanceTraveled').withColumnRenamed('sum(MetersDistanceTraveled)', 'MetersDistanceTraveled')
+
+
+output_path = 's3://analytics-telematics-tod-us-east-1-375375715580/chenha01/KIA_EU/GM_Raw_EntityAttr_MetersDistanceTraveled/year=2022/month=11'
+VIN202211_Attr.write.save(output_path, format='parquet', header=True)
+
+#2022-11 1172862
+#2023-6 1440543
+    
+     #"journeyMetadata.journeyUUID",
+     #                                                   "journeyMetadata.externalJourneyId",   
